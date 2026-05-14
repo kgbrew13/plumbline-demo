@@ -2349,13 +2349,13 @@ function Dashboard({ leads, jobs, invoices, crew, subs, setTab }) {
 // ── Main App ──────────────────────────────────────────────────
 export default function App() {
   const [tab,setTab]           = useState("dashboard");
-  const [leads,setLeads]       = useState(initialLeads);
+  const [leads,setLeads]       = useState([]);
   const [jobs,setJobs]         = useState([]);
-  const [crew,setCrew]         = useState(initialCrew);
-  const [subs,setSubs]         = useState(initialSubs);
+  const [crew,setCrew]         = useState([]);
+  const [subs,setSubs]         = useState([]);
   const [clientBook,setClients]= useState(initialClients);
-  const [estimates,setEsts]    = useState(initialEstimates);
-  const [invoices,setInvs]     = useState(initialInvoices);
+  const [estimates,setEsts]    = useState([]);
+  const [invoices,setInvs]     = useState([]);
   const [modal,setModal]   = useState(null);
   const close = () => setModal(null);
 
@@ -2419,8 +2419,146 @@ export default function App() {
     fetchJobs();
   }, []);
 
-  const saveLead   = (form) => { if(form.id){setLeads(ls=>ls.map(l=>l.id===form.id?{...l,...form}:l));}else{setLeads(ls=>[...ls,{...form,id:Date.now()}]);} close(); };
+  useEffect(() => {
+    async function fetchLeads() {
+      const { data: leadRows, error } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("tenant_id", "b5e8a1c0-4f2d-4e8b-9c3a-1d7f6e5b4a2c");
+      if (error) { console.error("Leads fetch error:", error); return; }
+      setLeads(leadRows.map(l => ({
+        id:           l.id,
+        name:         l.name,
+        company:      l.company,
+        phone:        l.phone,
+        email:        l.email,
+        facilityType: l.facility_type,
+        sqFt:         l.sq_ft,
+        status:       l.status,
+        notes:        l.notes        || [],
+        sentMessages: l.sent_messages || [],
+      })));
+    }
+    fetchLeads();
+  }, []);
+
+  useEffect(() => {
+    async function fetchCrew() {
+      const { data: rows, error } = await supabase
+        .from("crew")
+        .select("*")
+        .eq("tenant_id", "b5e8a1c0-4f2d-4e8b-9c3a-1d7f6e5b4a2c");
+      if (error) { console.error("Crew fetch error:", error); return; }
+      setCrew(rows.map(r => ({
+        id:     r.id,
+        name:   r.name,
+        role:   r.role,
+        phone:  r.phone,
+        email:  r.email,
+        status: r.status,
+        skills: r.skills || "",
+      })));
+    }
+    fetchCrew();
+  }, []);
+
+  useEffect(() => {
+    async function fetchSubs() {
+      const { data: rows, error } = await supabase
+        .from("subcontractors")
+        .select("*")
+        .eq("tenant_id", "b5e8a1c0-4f2d-4e8b-9c3a-1d7f6e5b4a2c");
+      if (error) { console.error("Subs fetch error:", error); return; }
+      setSubs(rows.map(r => ({
+        id:               r.id,
+        name:             r.name,
+        company:          r.company,
+        trade:            r.trade,
+        phone:            r.phone,
+        email:            r.email,
+        status:           r.status,
+        contractOnFile:   r.contract_on_file,
+        w9OnFile:         r.w9_on_file,
+        insuranceCurrent: r.insurance_current,
+        notes:            r.notes || [],
+      })));
+    }
+    fetchSubs();
+  }, []);
+
+  useEffect(() => {
+    async function fetchEstimates() {
+      const { data: rows, error } = await supabase
+        .from("estimates")
+        .select("*")
+        .eq("tenant_id", "b5e8a1c0-4f2d-4e8b-9c3a-1d7f6e5b4a2c");
+      if (error) { console.error("Estimates fetch error:", error); return; }
+      setEsts(rows.map(r => ({
+        id:           r.id,
+        number:       r.number,
+        client:       r.client,
+        email:        r.email,
+        facilityType: r.facility_type,
+        sqFt:         r.sq_ft,
+        date:         r.date,
+        status:       r.status,
+        items:        r.items || [],
+      })));
+    }
+    fetchEstimates();
+  }, []);
+
+  useEffect(() => {
+    async function fetchInvoices() {
+      const { data: rows, error } = await supabase
+        .from("invoices")
+        .select("*")
+        .eq("tenant_id", "b5e8a1c0-4f2d-4e8b-9c3a-1d7f6e5b4a2c");
+      if (error) { console.error("Invoices fetch error:", error); return; }
+      setInvs(rows.map(r => ({
+        id:           r.id,
+        number:       r.number,
+        client:       r.client,
+        email:        r.email,
+        project:      r.project,
+        amount:       r.amount,
+        paid:         r.paid,
+        due:          r.due,
+        status:       r.status,
+        notes:        r.notes         || [],
+        sentMessages: r.sent_messages || [],
+      })));
+    }
+    fetchInvoices();
+  }, []);
+
   const TENANT_ID = "b5e8a1c0-4f2d-4e8b-9c3a-1d7f6e5b4a2c";
+
+  const saveLead = async (form) => {
+    const leadRow = {
+      tenant_id:     TENANT_ID,
+      name:          form.name,
+      company:       form.company,
+      phone:         form.phone,
+      email:         form.email,
+      facility_type: form.facilityType,
+      sq_ft:         parseFloat(form.sqFt) || null,
+      status:        form.status,
+      notes:         form.notes        || [],
+      sent_messages: form.sentMessages || [],
+    };
+    if (form.id) {
+      const { error } = await supabase.from("leads").update(leadRow).eq("id", form.id);
+      if (error) { console.error("saveLead update error:", error); return; }
+      setLeads(ls => ls.map(l => l.id === form.id ? { ...l, ...form } : l));
+    } else {
+      const { data: newLead, error: insertErr } = await supabase
+        .from("leads").insert(leadRow).select().single();
+      if (insertErr) { console.error("saveLead insert error:", insertErr); return; }
+      setLeads(ls => [...ls, { ...form, id: newLead.id }]);
+    }
+    close();
+  };
 
   const saveJob = async (form) => {
     const jobRow = {
@@ -2458,13 +2596,127 @@ export default function App() {
     }
     close();
   };
-  const saveSub    = (form) => { if(form.id){setSubs(ss=>ss.map(s=>s.id===form.id?{...s,...form}:s));}else{setSubs(ss=>[...ss,{...form,id:Date.now()}]);} close(); };
+  const saveCrew = async (form) => {
+    const crewRow = {
+      tenant_id: TENANT_ID,
+      name:      form.name,
+      role:      form.role,
+      phone:     form.phone,
+      email:     form.email,
+      status:    form.status,
+      skills:    form.skills || "",
+    };
+    if (form.id) {
+      const { error } = await supabase.from("crew").update(crewRow).eq("id", form.id);
+      if (error) { console.error("saveCrew update error:", error); return; }
+      setCrew(cs => cs.map(c => c.id === form.id ? { ...c, ...form } : c));
+    } else {
+      const { data: newRow, error: insertErr } = await supabase
+        .from("crew").insert(crewRow).select().single();
+      if (insertErr) { console.error("saveCrew insert error:", insertErr); return; }
+      setCrew(cs => [...cs, { ...form, id: newRow.id }]);
+    }
+    close();
+  };
+
+  const saveSub = async (form) => {
+    const subRow = {
+      tenant_id:        TENANT_ID,
+      name:             form.name,
+      company:          form.company,
+      trade:            form.trade,
+      phone:            form.phone,
+      email:            form.email,
+      status:           form.status,
+      contract_on_file: form.contractOnFile  || false,
+      w9_on_file:       form.w9OnFile        || false,
+      insurance_current:form.insuranceCurrent|| false,
+      notes:            form.notes           || [],
+    };
+    if (form.id) {
+      const { error } = await supabase.from("subcontractors").update(subRow).eq("id", form.id);
+      if (error) { console.error("saveSub update error:", error); return; }
+      setSubs(ss => ss.map(s => s.id === form.id ? { ...s, ...form } : s));
+    } else {
+      const { data: newRow, error: insertErr } = await supabase
+        .from("subcontractors").insert(subRow).select().single();
+      if (insertErr) { console.error("saveSub insert error:", insertErr); return; }
+      setSubs(ss => [...ss, { ...form, id: newRow.id }]);
+    }
+    close();
+  };
   const saveClient = (form) => { setClients(cs=>cs.map(c=>c.id===form.id?{...c,...form}:c)); };
-  const saveEst    = (form) => { if(form.id){setEsts(es=>es.map(e=>e.id===form.id?{...e,...form}:e));}else{setEsts(es=>[...es,{...form,id:Date.now()}]);} close(); };
-  const saveInv    = (form) => { if(form.id){setInvs(iv=>iv.map(i=>i.id===form.id?{...i,...form}:i));}else{setInvs(iv=>[...iv,{...form,id:Date.now()}]);} close(); };
-  const convertToInvoice = (est) => {
+  const saveEst = async (form) => {
+    const estRow = {
+      tenant_id:     TENANT_ID,
+      number:        form.number,
+      client:        form.client,
+      email:         form.email,
+      facility_type: form.facilityType,
+      sq_ft:         parseFloat(form.sqFt) || null,
+      date:          form.date,
+      status:        form.status,
+      items:         form.items || [],
+    };
+    if (form.id) {
+      const { error } = await supabase.from("estimates").update(estRow).eq("id", form.id);
+      if (error) { console.error("saveEst update error:", error); return; }
+      setEsts(es => es.map(e => e.id === form.id ? { ...e, ...form } : e));
+    } else {
+      const { data: newRow, error: insertErr } = await supabase
+        .from("estimates").insert(estRow).select().single();
+      if (insertErr) { console.error("saveEst insert error:", insertErr); return; }
+      setEsts(es => [...es, { ...form, id: newRow.id }]);
+    }
+    close();
+  };
+
+  const saveInv = async (form) => {
+    const invRow = {
+      tenant_id:     TENANT_ID,
+      number:        form.number,
+      client:        form.client,
+      email:         form.email || "",
+      project:       form.project,
+      amount:        parseFloat(form.amount) || 0,
+      paid:          parseFloat(form.paid)   || 0,
+      due:           form.due || null,
+      status:        form.status,
+      notes:         form.notes         || [],
+      sent_messages: form.sentMessages  || [],
+    };
+    if (form.id) {
+      const { error } = await supabase.from("invoices").update(invRow).eq("id", form.id);
+      if (error) { console.error("saveInv update error:", error); return; }
+      setInvs(iv => iv.map(i => i.id === form.id ? { ...i, ...form } : i));
+    } else {
+      const { data: newRow, error: insertErr } = await supabase
+        .from("invoices").insert(invRow).select().single();
+      if (insertErr) { console.error("saveInv insert error:", insertErr); return; }
+      setInvs(iv => [...iv, { ...form, id: newRow.id }]);
+    }
+    close();
+  };
+
+  const convertToInvoice = async (est) => {
     const total = lineTotal(est.items);
-    setInvs(iv=>[...iv,{ id:Date.now(), number:`INV-2026-0${iv.length+20}`, client:est.client, email:est.email, project:`Est. ${est.number}`, amount:total, paid:0, due:"", status:"Unpaid", notes:[], sentMessages:[] }]);
+    const invRow = {
+      tenant_id:     TENANT_ID,
+      number:        `INV-2026-0${Date.now() % 90 + 20}`,
+      client:        est.client,
+      email:         est.email,
+      project:       `Est. ${est.number}`,
+      amount:        total,
+      paid:          0,
+      due:           null,
+      status:        "Unpaid",
+      notes:         [],
+      sent_messages: [],
+    };
+    const { data: newRow, error } = await supabase
+      .from("invoices").insert(invRow).select().single();
+    if (error) { console.error("convertToInvoice error:", error); return; }
+    setInvs(iv => [...iv, { ...invRow, id: newRow.id, sentMessages: [] }]);
     close(); setTab("financials");
   };
 
