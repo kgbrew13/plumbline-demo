@@ -154,6 +154,7 @@ const fmtK   = (n) => n >= 1000 ? "$" + (n/1000).toFixed(n%1000===0?0:1) + "k" :
 const lineTotal = (items) => items.reduce((s,i) => s + (parseFloat(i.qty)||0) * (parseFloat(i.price)||0), 0);
 const todayStr  = () => new Date().toLocaleDateString("en-US", { month:"short", day:"numeric" });
 const initials  = (name) => name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
+const parseLocalDate = (str) => { const [y,m,d] = str.split("-").map(Number); return new Date(y,m-1,d); };
 
 // ── Plumbline Logo ────────────────────────────────────────────
 function PlumblineMark({ size=32 }) {
@@ -362,7 +363,7 @@ function CalendarView({ jobs, subs }) {
     const date = new Date(year,month,d);
     return jobs.filter(j => {
       if(!j.startDate||!j.endDate) return false;
-      return date >= new Date(j.startDate) && date <= new Date(j.endDate);
+      return date >= parseLocalDate(j.startDate) && date <= parseLocalDate(j.endDate);
     });
   };
   const isToday = (d) => d && today.getDate()===d && today.getMonth()===month && today.getFullYear()===year;
@@ -373,7 +374,7 @@ function CalendarView({ jobs, subs }) {
         <div style={{ fontSize:18, fontWeight:800, color:T.primary, fontFamily:"Newsreader,serif" }}>{MONTHS[month]} {year}</div>
         <button onClick={()=>setViewDate(new Date(year,month+1,1))} style={{ background:T.bgLow, border:`1px solid ${T.border}`, borderRadius:8, width:36, height:36, cursor:"pointer", fontSize:18, color:T.primary }}>›</button>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:4 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:4 }}>
         {DAYS.map(d => <div key={d} style={{ textAlign:"center", fontSize:10, fontWeight:700, color:T.textDim, padding:"4px 0", textTransform:"uppercase" }}>{d}</div>)}
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
@@ -396,7 +397,7 @@ function CalendarView({ jobs, subs }) {
         <div style={{ fontSize:11, fontWeight:700, color:T.textDim, letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:12 }}>Active This Month</div>
         {jobs.filter(j => {
           if(!j.startDate) return false;
-          const s = new Date(j.startDate);
+          const s = parseLocalDate(j.startDate);
           return s.getMonth()===month && s.getFullYear()===year;
         }).map(j => (
           <div key={j.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:`1px solid ${T.border}` }}>
