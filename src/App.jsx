@@ -47,33 +47,41 @@ const DRAW_SCHEDULE = [
   { milestone: "Final Acceptance",                      pct: 10 },
 ];
 
+// Four-family high-contrast badge system:
+// in-progress = amber fill / dark text · complete = deep green fill / white text
+// pending = slate fill / white text · on-hold = neutral gray fill / dark text
+// (negative states use solid red / white text)
+const BADGE_PROGRESS = { color: "#1B1C1A", bg: "#E8924A" };
+const BADGE_COMPLETE = { color: "#FFFFFF", bg: "#1F5C3D" };
+const BADGE_PENDING  = { color: "#FFFFFF", bg: "#3D5066" };
+const BADGE_HOLD     = { color: "#1B1C1A", bg: "#C9CBCF" };
+const BADGE_ALERT    = { color: "#FFFFFF", bg: "#A31515" };
+
 const STATUS_META = {
-  "New Inquiry":        { color: T.blue,      bg: T.blueBg        },
-  "Site Visit Scheduled":{ color: T.amber,    bg: T.amberBg       },
-  "Proposal Sent":      { color: T.secondary, bg: T.secondaryLight },
-  "Contract Signed":    { color: T.green,     bg: T.greenBg       },
-  Lost:                 { color: T.red,       bg: T.redBg         },
-  "Site Survey":        { color: T.blue,      bg: T.blueBg        },
-  "Materials Delivered":{ color: T.amber,     bg: T.amberBg       },
-  "Week 1 Complete":    { color: T.secondary, bg: T.secondaryLight },
-  "Week 3 Complete":    { color: "#5B3E8F",   bg: "#F0ECFC"       },
-  "Final Acceptance":   { color: T.green,     bg: T.greenBg       },
-  "On Hold":            { color: T.amber,     bg: T.amberBg       },
-  Complete:             { color: T.green,     bg: T.greenBg       },
-  Unpaid:               { color: T.amber,     bg: T.amberBg       },
-  Partial:              { color: T.secondary, bg: T.secondaryLight },
-  Paid:                 { color: T.green,     bg: T.greenBg       },
-  Overdue:              { color: T.red,       bg: T.redBg         },
-  Available:            { color: T.green,     bg: T.greenBg       },
-  "On Job":             { color: T.secondary, bg: T.secondaryLight },
-  Unavailable:          { color: T.red,       bg: T.redBg         },
-  Pending:              { color: T.amber,     bg: T.amberBg       },
-  Approved:             { color: T.green,     bg: T.greenBg       },
-  Declined:             { color: T.red,       bg: T.redBg         },
-  Draft:                { color: T.textDim,   bg: T.surfaceHigh   },
-  Sent:                 { color: T.blue,      bg: T.blueBg        },
-  Approved:             { color: T.green,     bg: T.greenBg       },
-  Declined:             { color: T.red,       bg: T.redBg         },
+  "New Inquiry":          BADGE_PENDING,
+  "Site Visit Scheduled": BADGE_PENDING,
+  "Proposal Sent":        BADGE_PROGRESS,
+  "Contract Signed":      BADGE_COMPLETE,
+  Lost:                   BADGE_ALERT,
+  "Site Survey":          BADGE_PENDING,
+  "Materials Delivered":  BADGE_PROGRESS,
+  "Week 1 Complete":      BADGE_PROGRESS,
+  "Week 3 Complete":      BADGE_PROGRESS,
+  "Final Acceptance":     BADGE_COMPLETE,
+  "On Hold":              BADGE_HOLD,
+  Complete:               BADGE_COMPLETE,
+  Unpaid:                 BADGE_PENDING,
+  Partial:                BADGE_PROGRESS,
+  Paid:                   BADGE_COMPLETE,
+  Overdue:                BADGE_ALERT,
+  Available:              BADGE_COMPLETE,
+  "On Job":               BADGE_PROGRESS,
+  Unavailable:            BADGE_ALERT,
+  Pending:                BADGE_PENDING,
+  Approved:               BADGE_COMPLETE,
+  Declined:               BADGE_ALERT,
+  Draft:                  BADGE_HOLD,
+  Sent:                   BADGE_PENDING,
 };
 
 const AUTO_MESSAGES = {
@@ -157,10 +165,10 @@ const initials  = (name) => name.split(" ").map(w=>w[0]).join("").toUpperCase().
 const parseLocalDate = (str) => { const [y,m,d] = str.split("-").map(Number); return new Date(y,m-1,d); };
 
 // ── Plumbline Logo ────────────────────────────────────────────
-function PlumblineMark({ size=32 }) {
+function PlumblineMark({ size=32, onDark=false }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <rect width="32" height="32" rx="8" fill={T.primary}/>
+      <rect width="32" height="32" rx="8" fill={onDark ? "rgba(250,248,245,0.14)" : T.primary}/>
       <line x1="16" y1="5" x2="16" y2="21" stroke="#FAF8F5" strokeWidth="1.5" strokeLinecap="round"/>
       <polygon points="16,28 11,20 21,20" fill={T.secondary}/>
       <circle cx="16" cy="5" r="2" fill={T.secondary}/>
@@ -170,8 +178,8 @@ function PlumblineMark({ size=32 }) {
 
 // ── Badge ─────────────────────────────────────────────────────
 function Badge({ status, size="sm" }) {
-  const m = STATUS_META[status] || { color: T.textDim, bg: T.surfaceHigh };
-  return <span style={{ background:m.bg, color:m.color, borderRadius:6, padding: size==="lg"?"5px 12px":"3px 9px", fontSize: size==="lg"?12:10, fontWeight:700, letterSpacing:"0.03em", whiteSpace:"nowrap" }}>{status}</span>;
+  const m = STATUS_META[status] || { color: T.text, bg: T.surfaceHigh };
+  return <span style={{ background:m.bg, color:m.color, borderRadius:5, padding: size==="lg"?"5px 12px":"3px 9px", fontSize: size==="lg"?11:10, fontWeight:800, letterSpacing:"0.05em", textTransform:"uppercase", whiteSpace:"nowrap" }}>{status}</span>;
 }
 
 // ── Avatar ────────────────────────────────────────────────────
@@ -182,7 +190,7 @@ function Avatar({ name, size=36 }) {
 
 // ── Doc status chip ───────────────────────────────────────────
 function DocChip({ label, ok }) {
-  return <span style={{ background: ok ? T.greenBg : T.redBg, color: ok ? T.green : T.red, borderRadius:5, padding:"2px 8px", fontSize:10, fontWeight:700, marginRight:4 }}>{ok ? "✓" : "✗"} {label}</span>;
+  return <span style={{ background: ok ? "#1F5C3D" : "#A31515", color: "#FFFFFF", borderRadius:5, padding:"2px 8px", fontSize:10, fontWeight:700, marginRight:4 }}>{ok ? "✓" : "✗"} {label}</span>;
 }
 
 // ── Value Tag ─────────────────────────────────────────────────
@@ -237,7 +245,7 @@ const divider = { borderTop:`1px solid ${T.border}`, margin:"20px 0" };
 
 function PrimaryBtn({ onClick, children, color }) {
   const [h,setH] = useState(false);
-  return <button onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ width:"100%", background: h ? T.secondaryDark : (color||T.secondary), color:"#fff", border:"none", borderRadius:10, padding:"13px 20px", cursor:"pointer", fontSize:14, fontWeight:700, marginTop:8, transition:"all 0.15s", fontFamily:"inherit" }}>{children}</button>;
+  return <button onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ width:"100%", background: color ? color : (h ? "#DC8038" : T.secondary), color: color ? "#fff" : "#1B1C1A", border:"none", borderRadius:10, padding:"13px 20px", cursor:"pointer", fontSize:14, fontWeight:800, marginTop:8, transition:"all 0.15s", fontFamily:"inherit", opacity: color && h ? 0.9 : 1 }}>{children}</button>;
 }
 function GhostBtn({ onClick, children }) {
   return <button onClick={onClick} style={{ width:"100%", background:"transparent", color:T.textMid, border:`1px solid ${T.border}`, borderRadius:10, padding:"13px 20px", cursor:"pointer", fontSize:14, fontWeight:600, marginTop:8, fontFamily:"inherit" }}>{children}</button>;
@@ -249,7 +257,7 @@ function StatusPicker({ statuses, value, onChange }) {
       {statuses.map(st => {
         const m = STATUS_META[st] || { color:T.textDim, bg:T.surfaceHigh };
         const active = value === st;
-        return <button key={st} onClick={()=>onChange(st)} style={{ background: active?m.bg:"transparent", color: active?m.color:T.textDim, border:`1px solid ${active?m.color+"66":T.border}`, borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight: active?700:500, cursor:"pointer", fontFamily:"inherit" }}>{st}</button>;
+        return <button key={st} onClick={()=>onChange(st)} style={{ background: active?m.bg:"transparent", color: active?m.color:T.textDim, border:`1px solid ${active?m.bg:T.border}`, borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight: active?700:500, cursor:"pointer", fontFamily:"inherit" }}>{st}</button>;
       })}
     </div>
   );
@@ -270,7 +278,7 @@ function NoteLog({ notes, onAdd }) {
       <div style={{ display:"flex", gap:8, marginTop:10 }}>
         <input style={{ ...inp, marginBottom:0, flex:1 }} placeholder="Add a note..." value={text} onChange={e=>setText(e.target.value)}
           onKeyDown={e=>{ if(e.key==="Enter"&&text.trim()){onAdd({text:text.trim(),date:todayStr()});setText("");} }}/>
-        <button onClick={()=>{ if(text.trim()){onAdd({text:text.trim(),date:todayStr()});setText("");} }} style={{ background:T.secondary, color:"#fff", border:"none", borderRadius:10, padding:"0 16px", cursor:"pointer", fontSize:13, fontWeight:700, whiteSpace:"nowrap", fontFamily:"inherit" }}>Add</button>
+        <button onClick={()=>{ if(text.trim()){onAdd({text:text.trim(),date:todayStr()});setText("");} }} style={{ background:T.secondary, color:"#1B1C1A", border:"none", borderRadius:10, padding:"0 16px", cursor:"pointer", fontSize:13, fontWeight:700, whiteSpace:"nowrap", fontFamily:"inherit" }}>Add</button>
       </div>
     </div>
   );
@@ -314,7 +322,7 @@ function AutoMessagePanel({ trigger, name, sentLog, onSend }) {
         <div style={{ fontSize:11, color:T.textDim, marginTop:-10, marginBottom:12 }}>{sms.length} chars</div>
       </>)}
       {!sent
-        ? <button onClick={()=>{ setJustSent(true); onSend(trigger,channel); }} style={{ width:"100%", background:T.secondary, color:"#fff", border:"none", borderRadius:10, padding:"12px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Send {channel==="email"?"Email":"SMS"} Now</button>
+        ? <button onClick={()=>{ setJustSent(true); onSend(trigger,channel); }} style={{ width:"100%", background:T.secondary, color:"#1B1C1A", border:"none", borderRadius:10, padding:"12px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Send {channel==="email"?"Email":"SMS"} Now</button>
         : <div style={{ textAlign:"center", color:T.green, fontSize:13, padding:"10px 0", fontWeight:700 }}>✓ Message sent and logged</div>
       }
     </div>
@@ -375,19 +383,23 @@ function CalendarView({ jobs, subs }) {
         <div style={{ fontSize:18, fontWeight:800, color:T.primary, fontFamily:"Newsreader,serif" }}>{MONTHS[month]} {year}</div>
         <button onClick={()=>setViewDate(new Date(year,month+1,1))} style={{ background:T.bgLow, border:`1px solid ${T.border}`, borderRadius:8, width:36, height:36, cursor:"pointer", fontSize:18, color:T.primary }}>›</button>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:4 }}>
-        {DAYS.map(d => <div key={d} style={{ textAlign:"center", fontSize:10, fontWeight:700, color:T.textDim, padding:"4px 0", textTransform:"uppercase" }}>{d}</div>)}
-      </div>
+      {/* Single CSS Grid parent governs BOTH the SUN–SAT header row and the
+          day cells — one set of column tracks, so headers and cells cannot
+          drift out of alignment. Cells get min-width:0 + overflow:hidden so
+          job bar content can never push a column wider than its track. */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
+        {DAYS.map(d => (
+          <div key={d} style={{ minWidth:0, textAlign:"center", fontSize:10, fontWeight:800, color:T.textDim, padding:"4px 0", textTransform:"uppercase", letterSpacing:"0.05em" }}>{d}</div>
+        ))}
         {cells.map((d,i) => {
           const dayJobs = jobsForDay(d);
           const isTod = isToday(d);
           return (
-            <div key={i} style={{ minHeight:64, background: d?(isTod?T.primaryLight:T.surface):"transparent", border: d?`1px solid ${isTod?T.primary:T.border}`:"none", borderRadius:10, padding:5 }}>
-              {d && <div style={{ fontSize:11, fontWeight:isTod?800:400, color:isTod?T.primary:T.textMid, marginBottom:3, textAlign:"center" }}>{d}</div>}
+            <div key={`cell-${i}`} style={{ minWidth:0, overflow:"hidden", minHeight:64, background: d?(isTod?T.primaryLight:T.surface):"transparent", border: d?`1px solid ${isTod?T.primary:T.border}`:"none", borderRadius:10, padding:5 }}>
+              {d && <div style={{ fontSize:11, fontWeight:isTod?800:500, color:isTod?T.primary:T.textMid, marginBottom:3, textAlign:"center" }}>{d}</div>}
               {dayJobs.slice(0,2).map(j => {
-                const m = STATUS_META[j.status] || { color:T.primary, bg:T.blueBg };
-                return <div key={j.id} style={{ background:m.bg, color:m.color, borderRadius:4, padding:"2px 4px", fontSize:9, fontWeight:600, marginBottom:2, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{j.project}</div>;
+                const m = STATUS_META[j.status] || BADGE_PENDING;
+                return <div key={j.id} style={{ background:m.bg, color:m.color, borderRadius:4, padding:"2px 4px", fontSize:9, fontWeight:700, marginBottom:2, minWidth:0, maxWidth:"100%", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{j.project}</div>;
               })}
               {dayJobs.length>2 && <div style={{ fontSize:9, color:T.textDim }}>+{dayJobs.length-2}</div>}
             </div>
@@ -423,14 +435,14 @@ function LeadCard({ lead, onClick }) {
   const m = STATUS_META[lead.status] || { color:T.primary, bg:T.blueBg };
   return (
     <div onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
-      style={{ background:T.surface, border:`1px solid ${h?T.borderMid:T.border}`, borderRadius:16, padding:"18px 20px", cursor:"pointer", transition:"all 0.15s", boxShadow:h?"0 4px 24px rgba(61,80,102,0.1)":"none", borderLeft:`4px solid ${m.color}` }}>
+      style={{ background:T.surface, border:`1px solid ${h?T.borderMid:T.border}`, borderRadius:16, padding:"18px 20px", cursor:"pointer", transition:"all 0.15s", boxShadow:h?"0 4px 24px rgba(61,80,102,0.1)":"none", borderLeft:`4px solid ${m.bg}` }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:15, fontWeight:700, color:T.primary, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{lead.name}</div>
           <div style={{ fontSize:12, color:T.textDim, marginBottom:10 }}>{lead.company}</div>
           <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-            <span style={{ background:T.bgLow, borderRadius:6, padding:"3px 8px", fontSize:11, color:T.textMid }}>🏭 {lead.facilityType}</span>
-            {lead.sqFt && <span style={{ background:T.bgLow, borderRadius:6, padding:"3px 8px", fontSize:11, color:T.textMid }}>📐 {lead.sqFt?.toLocaleString()} sq ft</span>}
+            <span style={{ background:T.bgLow, borderRadius:6, padding:"3px 8px", fontSize:11, color:T.textMid, fontWeight:600 }}>{lead.facilityType}</span>
+            {lead.sqFt && <span style={{ background:T.bgLow, borderRadius:6, padding:"3px 8px", fontSize:11, color:T.textMid, fontWeight:600 }}>{lead.sqFt?.toLocaleString()} sq ft</span>}
           </div>
         </div>
         <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, flexShrink:0 }}>
@@ -454,24 +466,13 @@ function JobCard({ job, crew, subs, onClick }) {
   const totalValue  = job.contractValue + approvedCOs;
   return (
     <div onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
-      style={{ background:T.surface, border:`1px solid ${h?T.borderMid:T.border}`, borderRadius:16, padding:"18px 20px", cursor:"pointer", transition:"all 0.15s", boxShadow:h?"0 4px 24px rgba(61,80,102,0.1)":"none", borderLeft:`4px solid ${m.color}` }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12, marginBottom:10 }}>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:15, fontWeight:700, color:T.primary, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{job.project}</div>
-          <div style={{ fontSize:12, color:T.textDim, marginTop:2 }}>{job.client}</div>
-        </div>
-        <div style={{ flexShrink:0, textAlign:"right" }}>
-          <Badge status={job.status} size="lg"/>
-          <div style={{ fontSize:13, fontWeight:800, color:T.primary, marginTop:6, fontFamily:"Newsreader,serif" }}>{fmtK(totalValue)}</div>
-        </div>
-      </div>
-      <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
-        <span style={{ background:T.bgLow, borderRadius:6, padding:"3px 8px", fontSize:11, color:T.textMid }}>🏭 {job.facilityType}</span>
-        <span style={{ background:T.bgLow, borderRadius:6, padding:"3px 8px", fontSize:11, color:T.textMid }}>📐 {job.sqFt?.toLocaleString()} sq ft</span>
-        <span style={{ background:T.bgLow, borderRadius:6, padding:"3px 8px", fontSize:11, color:T.textMid }}>📅 {job.startDate} → {job.endDate}</span>
-        {approvedCOs > 0 && <span style={{ background:T.amberBg, borderRadius:6, padding:"3px 8px", fontSize:11, color:T.amber, fontWeight:700 }}>CO: +{fmt(approvedCOs)}</span>}
-        {pendingCOs > 0 && <span style={{ background:T.redBg, borderRadius:6, padding:"3px 8px", fontSize:11, color:T.red, fontWeight:700 }}>⚠ {pendingCOs} CO pending</span>}
-        {(job.delays||[]).length > 0 && <span style={{ background:"#EEF3F8", borderRadius:6, padding:"3px 8px", fontSize:11, color:"#2A5278", fontWeight:700 }}>🌧️ {(job.delays||[]).length} delay{(job.delays||[]).length!==1?"s":""}</span>}
+      style={{ background:T.surface, border:`1px solid ${h?T.borderMid:T.border}`, borderRadius:16, padding:"18px 20px", cursor:"pointer", transition:"all 0.15s", boxShadow:h?"0 4px 24px rgba(61,80,102,0.1)":"none", borderLeft:`4px solid ${m.bg}` }}>
+      {/* Level 1 — job name */}
+      <div style={{ fontSize:17, fontWeight:800, color:T.primary, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", letterSpacing:"-0.2px" }}>{job.project}</div>
+      {/* Level 2 — client + status */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, marginTop:4, marginBottom:10 }}>
+        <div style={{ fontSize:13, fontWeight:600, color:T.textMid, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{job.client}</div>
+        <Badge status={job.status} size="lg"/>
       </div>
       <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:6 }}>
         {assignedCrew.map(c => (
@@ -480,13 +481,23 @@ function JobCard({ job, crew, subs, onClick }) {
           </div>
         ))}
         {assignedSubs.map(s => (
-          <div key={s.id} style={{ display:"flex", alignItems:"center", gap:4, background:T.amberBg, borderRadius:6, padding:"3px 8px" }}>
-            <span style={{ fontSize:11, color:T.amber, fontWeight:600 }}>SUB</span>
-            <span style={{ fontSize:11, color:T.amber }}>{s.name.split(" ")[0]}</span>
+          <div key={s.id} style={{ display:"flex", alignItems:"center", gap:4, background:T.secondaryLight, borderRadius:6, padding:"3px 8px" }}>
+            <span style={{ fontSize:11, color:T.secondaryDark, fontWeight:700 }}>SUB</span>
+            <span style={{ fontSize:11, color:T.secondaryDark }}>{s.name.split(" ")[0]}</span>
           </div>
         ))}
       </div>
       <DrawBar draws={job.draws} contractValue={job.contractValue}/>
+      {/* Level 3 — dollars + dates, smallest */}
+      <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:10, marginTop:12, paddingTop:10, borderTop:`1px solid ${T.border}` }}>
+        <div style={{ display:"flex", alignItems:"baseline", gap:8, flexWrap:"wrap" }}>
+          <span style={{ fontSize:14, fontWeight:800, color:T.primary, fontFamily:"Newsreader,serif" }}>{fmtK(totalValue)}</span>
+          {approvedCOs > 0 && <span style={{ fontSize:11, color:T.secondaryDark, fontWeight:700 }}>CO +{fmt(approvedCOs)}</span>}
+          {pendingCOs > 0 && <span style={{ fontSize:11, color:T.red, fontWeight:700 }}>{pendingCOs} CO pending</span>}
+          {(job.delays||[]).length > 0 && <span style={{ fontSize:11, color:T.textDim, fontWeight:600 }}>{(job.delays||[]).length} delay{(job.delays||[]).length!==1?"s":""}</span>}
+        </div>
+        <div style={{ fontSize:11, color:T.textDim, whiteSpace:"nowrap" }}>{job.startDate} → {job.endDate}</div>
+      </div>
     </div>
   );
 }
@@ -499,7 +510,7 @@ function SubCard({ sub, jobs, onClick }) {
   const allDocsOk = sub.contractOnFile && sub.w9OnFile && sub.insuranceCurrent;
   return (
     <div onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
-      style={{ background:T.surface, border:`1px solid ${h?T.borderMid:T.border}`, borderRadius:16, padding:"18px 20px", cursor:"pointer", transition:"all 0.15s", boxShadow:h?"0 4px 24px rgba(61,80,102,0.1)":"none", borderLeft:`4px solid ${m.color}` }}>
+      style={{ background:T.surface, border:`1px solid ${h?T.borderMid:T.border}`, borderRadius:16, padding:"18px 20px", cursor:"pointer", transition:"all 0.15s", boxShadow:h?"0 4px 24px rgba(61,80,102,0.1)":"none", borderLeft:`4px solid ${m.bg}` }}>
       <div style={{ display:"flex", alignItems:"center", gap:14 }}>
         <Avatar name={sub.name} size={46}/>
         <div style={{ flex:1 }}>
@@ -529,7 +540,7 @@ function InvoiceCard({ inv, onClick }) {
   const pct = inv.amount > 0 ? Math.round((inv.paid/inv.amount)*100) : 0;
   return (
     <div onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
-      style={{ background:T.surface, border:`1px solid ${h?T.borderMid:T.border}`, borderRadius:16, padding:"18px 20px", cursor:"pointer", transition:"all 0.15s", boxShadow:h?"0 4px 24px rgba(61,80,102,0.1)":"none", borderLeft:`4px solid ${m.color}` }}>
+      style={{ background:T.surface, border:`1px solid ${h?T.borderMid:T.border}`, borderRadius:16, padding:"18px 20px", cursor:"pointer", transition:"all 0.15s", boxShadow:h?"0 4px 24px rgba(61,80,102,0.1)":"none", borderLeft:`4px solid ${m.bg}` }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12, marginBottom:12 }}>
         <div>
           <div style={{ fontSize:13, fontWeight:700, color:T.primary, marginBottom:2 }}>{inv.number}</div>
@@ -564,7 +575,7 @@ function EstimateCard({ est, onClick }) {
   const total = lineTotal(est.items);
   return (
     <div onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
-      style={{ background:T.surface, border:`1px solid ${h?T.borderMid:T.border}`, borderRadius:16, padding:"18px 20px", cursor:"pointer", transition:"all 0.15s", boxShadow:h?"0 4px 24px rgba(61,80,102,0.1)":"none", borderLeft:`4px solid ${m.color}` }}>
+      style={{ background:T.surface, border:`1px solid ${h?T.borderMid:T.border}`, borderRadius:16, padding:"18px 20px", cursor:"pointer", transition:"all 0.15s", boxShadow:h?"0 4px 24px rgba(61,80,102,0.1)":"none", borderLeft:`4px solid ${m.bg}` }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}>
         <div>
           <div style={{ fontSize:13, fontWeight:700, color:T.primary, marginBottom:2 }}>{est.number}</div>
@@ -664,7 +675,7 @@ function ChangeOrderTracker({ cos, contractValue, onChange }) {
       {(cos||[]).map(co => {
         const m = STATUS_META[co.status] || { color:T.amber, bg:T.amberBg };
         return (
-          <div key={co.id} style={{ background:T.bgLow, border:`1px solid ${m.color}44`, borderRadius:12, padding:"12px 14px", marginBottom:10 }}>
+          <div key={co.id} style={{ background:T.bgLow, border:`1px solid ${m.bg}66`, borderRadius:12, padding:"12px 14px", marginBottom:10 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
               <div style={{ flex:1, marginRight:10 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:3 }}>{co.desc}</div>
@@ -682,7 +693,7 @@ function ChangeOrderTracker({ cos, contractValue, onChange }) {
                 const active = co.status === st;
                 return (
                   <button key={st} onClick={()=>updateStatus(co.id,st)}
-                    style={{ background: active?sm.bg:"transparent", color: active?sm.color:T.textDim, border:`1px solid ${active?sm.color+"66":T.border}`, borderRadius:6, padding:"4px 10px", fontSize:11, fontWeight: active?700:500, cursor:"pointer", fontFamily:"inherit" }}>
+                    style={{ background: active?sm.bg:"transparent", color: active?sm.color:T.textDim, border:`1px solid ${active?sm.bg:T.border}`, borderRadius:6, padding:"4px 10px", fontSize:11, fontWeight: active?700:500, cursor:"pointer", fontFamily:"inherit" }}>
                     {st}
                   </button>
                 );
@@ -721,7 +732,7 @@ function ChangeOrderTracker({ cos, contractValue, onChange }) {
             {CO_STATUSES.map(st => {
               const sm = STATUS_META[st] || { color:T.textDim, bg:T.surfaceHigh };
               const active = newCO.status === st;
-              return <button key={st} onClick={()=>setNewCO(n=>({...n,status:st}))} style={{ background: active?sm.bg:"transparent", color: active?sm.color:T.textDim, border:`1px solid ${active?sm.color+"66":T.border}`, borderRadius:6, padding:"5px 12px", fontSize:12, fontWeight: active?700:500, cursor:"pointer", fontFamily:"inherit" }}>{st}</button>;
+              return <button key={st} onClick={()=>setNewCO(n=>({...n,status:st}))} style={{ background: active?sm.bg:"transparent", color: active?sm.color:T.textDim, border:`1px solid ${active?sm.bg:T.border}`, borderRadius:6, padding:"5px 12px", fontSize:12, fontWeight: active?700:500, cursor:"pointer", fontFamily:"inherit" }}>{st}</button>;
             })}
           </div>
           <div onClick={()=>setNewCO(n=>({...n,paidUpfront:!n.paidUpfront}))}
@@ -732,7 +743,7 @@ function ChangeOrderTracker({ cos, contractValue, onChange }) {
             <span style={{ fontSize:13, color: newCO.paidUpfront?T.green:T.textMid, fontWeight: newCO.paidUpfront?700:500 }}>Paid upfront (as per 8Coating policy)</span>
           </div>
           <div style={{ display:"flex", gap:8 }}>
-            <button onClick={addCO} style={{ flex:1, background:T.secondary, color:"#fff", border:"none", borderRadius:9, padding:"11px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Add Change Order</button>
+            <button onClick={addCO} style={{ flex:1, background:T.secondary, color:"#1B1C1A", border:"none", borderRadius:9, padding:"11px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Add Change Order</button>
             <button onClick={()=>setAdding(false)} style={{ flex:1, background:"transparent", color:T.textMid, border:`1px solid ${T.border}`, borderRadius:9, padding:"11px", cursor:"pointer", fontSize:13, fontWeight:600, fontFamily:"inherit" }}>Cancel</button>
           </div>
         </div>
@@ -1019,7 +1030,7 @@ function ClosingDocumentsGenerator({ job, onClose }) {
               <div style={{ fontSize:13, fontWeight:700, color:T.secondaryDark, marginBottom:4 }}>📤 Send Punch List to Client</div>
               <div style={{ fontSize:11, color:T.textDim, marginBottom:12 }}>Delivers punch list to {job.email||"the client"} for review and signature. Triggers the final 10% payment draw.</div>
               {!punchSent
-                ? <button onClick={()=>setPunchSent(true)} style={{ background:T.secondary, color:"#fff", border:"none", borderRadius:9, padding:"10px 20px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Send Punch List Email</button>
+                ? <button onClick={()=>setPunchSent(true)} style={{ background:T.secondary, color:"#1B1C1A", border:"none", borderRadius:9, padding:"10px 20px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Send Punch List Email</button>
                 : <div style={{ fontSize:13, color:T.green, fontWeight:700 }}>✓ Punch list sent to {job.email||"client"}</div>
               }
             </div>
@@ -1330,7 +1341,7 @@ function PerformanceContractGenerator({ job, onClose }) {
           <div style={{ fontSize:13, fontWeight:700, color:T.secondaryDark, marginBottom:4 }}>📤 Send Contract to Client</div>
           <div style={{ fontSize:11, color:T.textDim, marginBottom:12 }}>Delivers this performance contract to {job.email||"the client"} for review and signature.</div>
           {!sent
-            ? <button onClick={()=>setSent(true)} style={{ background:T.secondary, color:"#fff", border:"none", borderRadius:9, padding:"10px 20px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Send Contract Email</button>
+            ? <button onClick={()=>setSent(true)} style={{ background:T.secondary, color:"#1B1C1A", border:"none", borderRadius:9, padding:"10px 20px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Send Contract Email</button>
             : <div style={{ fontSize:13, color:T.green, fontWeight:700 }}>✓ Contract sent to {job.email||"client"}</div>
           }
         </div>
@@ -1643,7 +1654,7 @@ function ProposalGenerator({ estimate, onClose }) {
           <div style={{ fontSize:13, fontWeight:700, color:T.secondaryDark, marginBottom:4 }}>📤 Send Proposal to Client</div>
           <div style={{ fontSize:11, color:T.textDim, marginBottom:12 }}>Delivers this proposal to {estimate.email} with a request to review and confirm.</div>
           {!sent
-            ? <button onClick={()=>setSent(true)} style={{ background:T.secondary, color:"#fff", border:"none", borderRadius:9, padding:"10px 20px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Send Proposal Email</button>
+            ? <button onClick={()=>setSent(true)} style={{ background:T.secondary, color:"#1B1C1A", border:"none", borderRadius:9, padding:"10px 20px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Send Proposal Email</button>
             : <div style={{ fontSize:13, color:T.green, fontWeight:700 }}>✓ Proposal sent to {estimate.email}</div>
           }
         </div>
@@ -1743,7 +1754,7 @@ function InvoiceModal({ invoice, onClose, onSave }) {
         <div style={{ fontSize:13, fontWeight:700, color:T.secondaryDark, marginBottom:4 }}>📄 Send Invoice to Client</div>
         <div style={{ fontSize:11, color:T.textDim, marginBottom:10 }}>Sends invoice with draw schedule breakdown and balance due.</div>
         {!invSent
-          ? <button onClick={()=>{setJustSent(true);set("sentMessages",[...(form.sentMessages||[]),"invoice"]);}} style={{ background:T.secondary, color:"#fff", border:"none", borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Send Invoice Email</button>
+          ? <button onClick={()=>{setJustSent(true);set("sentMessages",[...(form.sentMessages||[]),"invoice"]);}} style={{ background:T.secondary, color:"#1B1C1A", border:"none", borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit" }}>Send Invoice Email</button>
           : <div style={{ fontSize:13, color:T.green, fontWeight:700 }}>✓ Invoice sent to {form.email||invoice?.email}</div>
         }
       </div>
@@ -1896,7 +1907,7 @@ function ClientDetailModal({ client, jobs, invoices, onClose, onSave }) {
             const m = STATUS_META[j.status] || { color:T.primary, bg:T.blueBg };
             const approvedCOs = (j.cos||[]).filter(c=>c.status==="Approved").reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
             return (
-              <div key={j.id} style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:"14px 16px", marginBottom:10, borderLeft:`4px solid ${m.color}` }}>
+              <div key={j.id} style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:"14px 16px", marginBottom:10, borderLeft:`4px solid ${m.bg}` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
                   <div>
                     <div style={{ fontSize:14, fontWeight:700, color:T.primary }}>{j.project}</div>
@@ -2048,20 +2059,23 @@ const NAV = [
   { id:"schedule",   label:"Schedule", icon:"▦" },
   { id:"crew",       label:"Crew",     icon:"◎" },
   { id:"subs",       label:"Subs",     icon:"◆" },
-  { id:"warranty",   label:"Warranty", icon:"🛡" },
+  { id:"warranty",   label:"Warranty", icon:"❖" },
   { id:"financials", label:"Finance",  icon:"◇" },
 ];
 
+// Slate brand nav. Buttons are flex children with min-width:0 so all nine
+// tabs stay visible down to 320px; label size steps down via .pl-navlabel
+// media queries (see global stylesheet in App).
 function BottomNav({ tab, setTab }) {
   return (
-    <div style={{ position:"fixed", bottom:0, left:0, right:0, background:T.surface, borderTop:`1px solid ${T.border}`, display:"flex", justifyContent:"space-around", alignItems:"center", padding:"8px 0 max(8px,env(safe-area-inset-bottom))", zIndex:200, boxShadow:"0 -4px 24px rgba(61,80,102,0.1)" }}>
+    <div style={{ position:"fixed", bottom:0, left:0, right:0, background:T.primary, display:"flex", alignItems:"stretch", padding:"6px 2px max(6px,env(safe-area-inset-bottom))", zIndex:200, boxShadow:"0 -4px 24px rgba(38,57,78,0.35)" }}>
       {NAV.map(item => {
         const active = tab === item.id;
         return (
-          <button key={item.id} onClick={()=>setTab(item.id)} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2, background:"none", border:"none", cursor:"pointer", padding:"4px 6px", minWidth:40, fontFamily:"inherit" }}>
-            <span style={{ fontSize:18, color: active?T.secondary:T.textDim }}>{item.icon}</span>
-            <span style={{ fontSize:8, fontWeight: active?800:500, color: active?T.secondary:T.textDim, letterSpacing:"0.04em", textTransform:"uppercase" }}>{item.label}</span>
-            {active && <div style={{ width:16, height:2, borderRadius:1, background:T.secondary }}/>}
+          <button key={item.id} onClick={()=>setTab(item.id)} style={{ flex:"1 1 0", minWidth:0, display:"flex", flexDirection:"column", alignItems:"center", gap:2, background:"none", border:"none", cursor:"pointer", padding:"4px 0", fontFamily:"inherit" }}>
+            <span style={{ fontSize:17, lineHeight:1, color: active?T.secondary:"rgba(250,248,245,0.85)" }}>{item.icon}</span>
+            <span className="pl-navlabel" style={{ fontWeight: active?800:600, color: active?T.secondary:"rgba(250,248,245,0.72)", textTransform:"uppercase", maxWidth:"100%", overflow:"hidden", whiteSpace:"nowrap" }}>{item.label}</span>
+            <div style={{ width:16, height:2, borderRadius:1, background: active?T.secondary:"transparent" }}/>
           </button>
         );
       })}
@@ -2076,7 +2090,7 @@ function SectionHeader({ title, sub, onAdd, addLabel }) {
         <div style={{ fontSize:22, fontWeight:800, color:T.primary, letterSpacing:"-0.3px", fontFamily:"Newsreader,serif" }}>{title}</div>
         {sub && <div style={{ fontSize:13, color:T.textDim, marginTop:3 }}>{sub}</div>}
       </div>
-      {onAdd && <button onClick={onAdd} style={{ background:T.secondary, color:"#fff", border:"none", borderRadius:10, padding:"9px 16px", cursor:"pointer", fontSize:13, fontWeight:700, whiteSpace:"nowrap", flexShrink:0, fontFamily:"inherit", boxShadow:`0 2px 12px rgba(232,146,74,0.3)` }}>{addLabel||"+ Add"}</button>}
+      {onAdd && <button onClick={onAdd} style={{ background:T.secondary, color:"#1B1C1A", border:"none", borderRadius:10, padding:"9px 16px", cursor:"pointer", fontSize:13, fontWeight:700, whiteSpace:"nowrap", flexShrink:0, fontFamily:"inherit", boxShadow:`0 2px 12px rgba(232,146,74,0.3)` }}>{addLabel||"+ Add"}</button>}
     </div>
   );
 }
@@ -2177,8 +2191,8 @@ function WarrantyTab({ jobs }) {
                   <div style={{ fontSize:10, color:T.textDim, marginTop:3 }}>{w.monthsElapsed} of {WARRANTY_YEARS*12} months elapsed · {Math.round(pctElapsed)}%</div>
                 </div>
                 <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                  <span style={{ background:T.greenBg, color:T.green, borderRadius:6, padding:"2px 8px", fontSize:10, fontWeight:700 }}>✓ {completedTouchpoints}/{FOLLOWUP_SCHEDULE.length} check-ins done</span>
-                  {nextTouchpoint && <span style={{ background: nextTouchpoint.isUpcoming?T.amberBg:T.bgLow, color: nextTouchpoint.isUpcoming?T.amber:T.textDim, borderRadius:6, padding:"2px 8px", fontSize:10, fontWeight:700 }}>Next: {nextTouchpoint.label} — {nextTouchpoint.dueStr}</span>}
+                  <span style={{ background:"#1F5C3D", color:"#FFFFFF", borderRadius:6, padding:"2px 8px", fontSize:10, fontWeight:700 }}>✓ {completedTouchpoints}/{FOLLOWUP_SCHEDULE.length} check-ins done</span>
+                  {nextTouchpoint && <span style={{ background: nextTouchpoint.isUpcoming?T.secondary:T.bgLow, color: nextTouchpoint.isUpcoming?"#1B1C1A":T.textDim, borderRadius:6, padding:"2px 8px", fontSize:10, fontWeight:700 }}>Next: {nextTouchpoint.label} — {nextTouchpoint.dueStr}</span>}
                 </div>
               </div>
               <div style={{ fontSize:18, color:T.textDim, flexShrink:0 }}>{isOpen?"▾":"▸"}</div>
@@ -2207,8 +2221,8 @@ function WarrantyTab({ jobs }) {
                       </div>
                     </div>
                     {/* Status */}
-                    {t.isPast && <span style={{ background:T.greenBg, color:T.green, borderRadius:6, padding:"3px 8px", fontSize:10, fontWeight:700, flexShrink:0 }}>Done</span>}
-                    {t.isUpcoming && <span style={{ background:T.amberBg, color:T.amber, borderRadius:6, padding:"3px 8px", fontSize:10, fontWeight:700, flexShrink:0, animation:"none" }}>Due Soon</span>}
+                    {t.isPast && <span style={{ background:"#1F5C3D", color:"#FFFFFF", borderRadius:6, padding:"3px 8px", fontSize:10, fontWeight:700, flexShrink:0 }}>Done</span>}
+                    {t.isUpcoming && <span style={{ background:T.secondary, color:"#1B1C1A", borderRadius:6, padding:"3px 8px", fontSize:10, fontWeight:700, flexShrink:0 }}>Due Soon</span>}
                   </div>
                 ))}
                 <div style={{ marginTop:8, paddingTop:12, borderTop:`1px solid ${T.border}` }}>
@@ -2220,6 +2234,31 @@ function WarrantyTab({ jobs }) {
         );
       })}
     </div>
+  );
+}
+
+// ── Donut Chart (SVG, brand colors only) ─────────────────────
+function DonutChart({ segments, size=150, stroke=24, centerValue, centerLabel }) {
+  const total = segments.reduce((s,x) => s + x.value, 0) || 1;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  let offset = 0;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink:0 }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={T.border} strokeWidth={stroke}/>
+      {segments.map((seg,i) => {
+        const dash = (seg.value / total) * c;
+        const el = (
+          <circle key={i} cx={size/2} cy={size/2} r={r} fill="none" stroke={seg.color} strokeWidth={stroke}
+            strokeDasharray={`${dash} ${c - dash}`} strokeDashoffset={-offset}
+            transform={`rotate(-90 ${size/2} ${size/2})`}/>
+        );
+        offset += dash;
+        return el;
+      })}
+      <text x="50%" y="48%" textAnchor="middle" style={{ fontSize:19, fontWeight:800, fill:T.primary, fontFamily:"Newsreader,serif" }}>{centerValue}</text>
+      <text x="50%" y="61%" textAnchor="middle" style={{ fontSize:7.5, fontWeight:700, fill:T.textDim, letterSpacing:"0.1em" }}>{centerLabel}</text>
+    </svg>
   );
 }
 
@@ -2240,17 +2279,45 @@ function Dashboard({ leads, jobs, invoices, crew, subs, setTab }) {
       <div style={{ background:`linear-gradient(135deg, ${T.primaryDark} 0%, ${T.primary} 100%)`, borderRadius:20, padding:"24px 22px", marginBottom:16, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", right:-10, top:-10, opacity:0.06 }}><PlumblineMark size={140}/></div>
         <div style={{ fontSize:10, color:"#FAF8F5aa", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>8Coating · Plumbline by Teelworks</div>
-        <div style={{ fontSize:22, fontWeight:800, color:"#FAF8F5", fontFamily:"Newsreader,serif", letterSpacing:"-0.5px", marginBottom:2 }}>Good morning, David ☀️</div>
+        <div style={{ fontSize:22, fontWeight:800, color:"#FAF8F5", fontFamily:"Newsreader,serif", letterSpacing:"-0.5px", marginBottom:2 }}>Good morning, David</div>
         <div style={{ fontSize:13, color:"#FAF8F5bb", marginBottom:18, fontStyle:"italic" }}>Run it true.</div>
+        {/* Three headline numbers */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
           {[
-            { label:"Active Pipeline", value:fmtK(pipeline), color:"#FAF8F5" },
-            { label:"Jobs In Progress", value:activeJobs.length, color:T.secondary },
-            { label:"Collected", value:fmtK(totalCollected), color:"#6FCFA0" },
+            { label:"Collected", value:fmtK(totalCollected), color:"#FAF8F5" },
+            { label:"Active Jobs", value:activeJobs.length, color:T.secondary },
+            { label:"Outstanding", value:fmtK(totalBilled-totalCollected), color:"#FAF8F5" },
           ].map(({ label,value,color }) => (
             <div key={label} style={{ background:"rgba(255,255,255,0.08)", borderRadius:12, padding:"12px 14px" }}>
               <div style={{ fontSize:9, color:"#FAF8F5aa", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:6 }}>{label}</div>
-              <div style={{ fontSize:20, fontWeight:800, color, fontFamily:"Newsreader,serif", letterSpacing:"-0.5px" }}>{value}</div>
+              <div style={{ fontSize:26, fontWeight:800, color, fontFamily:"Newsreader,serif", letterSpacing:"-0.5px", lineHeight:1.1 }}>{value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Revenue donut — slate / amber / green only */}
+      <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:"18px 20px", marginBottom:12, display:"flex", alignItems:"center", gap:22 }}>
+        <DonutChart
+          segments={[
+            { label:"Collected",     value:totalCollected,             color:T.green     },
+            { label:"Outstanding",   value:totalBilled-totalCollected, color:T.secondary },
+            { label:"Open Pipeline", value:pipeline,                   color:T.primary   },
+          ]}
+          centerValue={fmtK(totalCollected + (totalBilled-totalCollected) + pipeline)}
+          centerLabel="TOTAL BOOK"
+        />
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:13, fontWeight:700, color:T.primary, marginBottom:12 }}>Money Position</div>
+          {[
+            { label:"Collected",     value:fmtK(totalCollected),             color:T.green     },
+            { label:"Outstanding",   value:fmtK(totalBilled-totalCollected), color:T.secondary },
+            { label:"Open Pipeline", value:fmtK(pipeline),                   color:T.primary   },
+          ].map(({ label,value,color }) => (
+            <div key={label} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+              <div style={{ width:10, height:10, borderRadius:3, background:color, flexShrink:0 }}/>
+              <div style={{ flex:1, fontSize:12, color:T.textMid, fontWeight:600 }}>{label}</div>
+              <div style={{ fontSize:14, fontWeight:800, color:T.text, fontFamily:"Newsreader,serif" }}>{value}</div>
             </div>
           ))}
         </div>
@@ -2728,17 +2795,22 @@ export default function App() {
   return (
     <div style={{ background:T.bg, minHeight:"100vh", fontFamily:"'Plus Jakarta Sans',sans-serif", color:T.text, paddingBottom:96 }}>
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,600;0,6..72,700;0,6..72,800;1,6..72,600&display=swap" rel="stylesheet"/>
+      <style>{`
+        .pl-navlabel { font-size:8px; letter-spacing:0.04em; }
+        @media (max-width:379px) { .pl-navlabel { font-size:7px; letter-spacing:0.02em; } }
+        @media (max-width:339px) { .pl-navlabel { font-size:6.5px; letter-spacing:0; } }
+      `}</style>
 
-      {/* Top Bar */}
-      <div style={{ background:T.surface, borderBottom:`1px solid ${T.border}`, padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100, boxShadow:"0 1px 8px rgba(61,80,102,0.06)" }}>
+      {/* Top Bar — slate brand header */}
+      <div style={{ background:T.primary, padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px rgba(38,57,78,0.35)" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <PlumblineMark size={30}/>
+          <PlumblineMark size={30} onDark/>
           <div>
-            <div style={{ fontSize:16, fontWeight:800, color:T.primary, fontFamily:"Newsreader,serif", fontStyle:"italic", letterSpacing:"-0.3px", lineHeight:1.1 }}>Plumbline</div>
-            <div style={{ fontSize:9, color:T.textDim, letterSpacing:"0.1em", textTransform:"uppercase" }}>8Coating · by Teelworks</div>
+            <div style={{ fontSize:16, fontWeight:800, color:"#FFFFFF", fontFamily:"Newsreader,serif", fontStyle:"italic", letterSpacing:"-0.3px", lineHeight:1.1 }}>Plumbline</div>
+            <div style={{ fontSize:9, color:"rgba(250,248,245,0.7)", letterSpacing:"0.1em", textTransform:"uppercase" }}>8Coating · by Teelworks</div>
           </div>
         </div>
-        <div style={{ fontSize:11, color:T.textDim, fontStyle:"italic" }}>Run it true.</div>
+        <div style={{ fontSize:11, color:T.secondary, fontStyle:"italic", fontWeight:600 }}>Run it true.</div>
       </div>
 
       {/* Content */}
@@ -2780,7 +2852,7 @@ export default function App() {
               const onJobs = jobs.filter(j => j.crew.includes(member.id) && j.status!=="Complete");
               return (
                 <div key={member.id} onClick={()=>setModal({type:"crew",data:member})}
-                  style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:"16px 20px", cursor:"pointer", borderLeft:`4px solid ${m.color}` }}>
+                  style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:"16px 20px", cursor:"pointer", borderLeft:`4px solid ${m.bg}` }}>
                   <div style={{ display:"flex", alignItems:"center", gap:14 }}>
                     <Avatar name={member.name} size={44}/>
                     <div style={{ flex:1 }}>
